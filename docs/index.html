@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- 2018-09-14 Fri 21:25 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQLite Practice Notes</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="DEADB17">
+<link rel="stylesheet" href="solarized-dark.min.css">
+</head>
+<body>
+<div id="content">
+<header>
+<h1 class="title">SQLite Practice Notes</h1>
+</header><nav id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org8b70ba8">Setup</a>
+<ul>
+<li><a href="#orgd71f67b"><code>sqlite3</code> command line options</a></li>
+<li><a href="#org0dfc39a">Show tables</a></li>
+<li><a href="#org86f81c8">Show schema</a></li>
+</ul>
+</li>
+<li><a href="#org53c46f9">Practice</a>
+<ul>
+<li><a href="#orgb405903">Tables</a></li>
+<li><a href="#org1cf37f3">Schemas</a>
+<ul>
+<li><a href="#orgc00e5ff"><code>.schema albums</code></a></li>
+<li><a href="#org45f1a7a"><code>.schema artists</code></a></li>
+<li><a href="#orgd4d4c8b"><code>.schema tracks</code></a></li>
+</ul>
+</li>
+<li><a href="#orgc6ac39a">Select</a>
+<ul>
+<li><a href="#orgf33dfdf">Select * from albums</a></li>
+<li><a href="#orga9b771e">Select albums with most tracks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</nav>
+<ul class="org-ul">
+<li>An <a href="https://orgmode.org/">orgmode</a> based note <a href="https://deadb17.github.io/sqlite-practice-notes/">publishing</a> pipeline example created while looking at <a href="https://sqlite.org/">SQLite</a>.</li>
+<li>Uses the <code>chinook.db</code> database from <a href="http://www.sqlitetutorial.net/">SQLite Tutorial</a>.</li>
+</ul>
+
+
+<div id="outline-container-org8b70ba8" class="outline-2">
+<h2 id="org8b70ba8">Setup</h2>
+<div class="outline-text-2" id="text-org8b70ba8">
+</div>
+<div id="outline-container-orgd71f67b" class="outline-3">
+<h3 id="orgd71f67b"><code>sqlite3</code> command line options</h3>
+<div class="outline-text-3" id="text-orgd71f67b">
+<pre class="example">
+Usage: sqlite3 [OPTIONS] FILENAME [SQL]
+
+FILENAME is the name of an SQLite database. A new database is created
+if the file does not previously exist.
+
+OPTIONS include:
+   -ascii               set output mode to 'ascii'
+   -bail                stop after hitting an error
+   -batch               force batch I/O
+   -column              set output mode to 'column'
+   -cmd COMMAND         run "COMMAND" before reading stdin
+   -csv                 set output mode to 'csv'
+   -echo                print commands before execution
+   -init FILENAME       read/process named file
+   -[no]header          turn headers on or off
+   -help                show this message
+   -html                set output mode to HTML
+   -interactive         force interactive I/O
+   -line                set output mode to 'line'
+   -list                set output mode to 'list'
+   -lookaside SIZE N    use N entries of SZ bytes for lookaside memory
+   -mmap N              default mmap size set to N
+   -newline SEP         set output row separator. Default: '\n'
+   -nullvalue TEXT      set text string for NULL values. Default ''
+   -pagecache SIZE N    use N slots of SZ bytes each for page cache memory
+   -scratch SIZE N      use N slots of SZ bytes each for scratch memory
+   -separator SEP       set output column separator. Default: '|'
+   -stats               print memory stats before each finalize
+   -version             show SQLite version
+   -vfs NAME            use NAME as the default VFS
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org0dfc39a" class="outline-3">
+<h3 id="org0dfc39a">Show tables</h3>
+<div class="outline-text-3" id="text-org0dfc39a">
+<div class="org-src-container">
+<pre class="src src-sh" id="org1afb5e7">sqlite3 -cmd <span style="color: #e9b96e;">'.tables'</span> chinook.db
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org86f81c8" class="outline-3">
+<h3 id="org86f81c8">Show schema</h3>
+<div class="outline-text-3" id="text-org86f81c8">
+<div class="org-src-container">
+<pre class="src src-sh" id="org3b06ed9">sqlite3 -cmd <span style="color: #e9b96e;">'.schema albums'</span> chinook.db
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org53c46f9" class="outline-2">
+<h2 id="org53c46f9">Practice</h2>
+<div class="outline-text-2" id="text-org53c46f9">
+</div>
+<div id="outline-container-orgb405903" class="outline-3">
+<h3 id="orgb405903">Tables</h3>
+<div class="outline-text-3" id="text-orgb405903">
+<pre class="example">
+albums          employees       invoices        playlists
+artists         genres          media_types     tracks
+customers       invoice_items   playlist_track
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org1cf37f3" class="outline-3">
+<h3 id="org1cf37f3">Schemas</h3>
+<div class="outline-text-3" id="text-org1cf37f3">
+</div>
+<div id="outline-container-orgc00e5ff" class="outline-4">
+<h4 id="orgc00e5ff"><code>.schema albums</code></h4>
+<div class="outline-text-4" id="text-orgc00e5ff">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #b4fa70;">CREATE</span> <span style="color: #b4fa70;">TABLE</span> <span style="color: #fce94f;">IF</span> <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">EXISTS</span> "albums"
+(
+    [AlbumId] <span style="color: #8cc4ff;">INTEGER</span> <span style="color: #b4fa70;">PRIMARY</span> <span style="color: #b4fa70;">KEY</span> AUTOINCREMENT <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [Title] NVARCHAR(160)  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [ArtistId] <span style="color: #8cc4ff;">INTEGER</span>  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    <span style="color: #b4fa70;">FOREIGN</span> <span style="color: #b4fa70;">KEY</span> ([ArtistId]) <span style="color: #b4fa70;">REFERENCES</span> "artists" ([ArtistId])
+                <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">DELETE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span> <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">UPDATE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span>
+);
+<span style="color: #b4fa70;">CREATE</span> INDEX [IFK_AlbumArtistId] <span style="color: #b4fa70;">ON</span> "albums" ([ArtistId]);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org45f1a7a" class="outline-4">
+<h4 id="org45f1a7a"><code>.schema artists</code></h4>
+<div class="outline-text-4" id="text-org45f1a7a">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #b4fa70;">CREATE</span> <span style="color: #b4fa70;">TABLE</span> <span style="color: #fce94f;">IF</span> <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">EXISTS</span> "artists"
+(
+    [ArtistId] <span style="color: #8cc4ff;">INTEGER</span> <span style="color: #b4fa70;">PRIMARY</span> <span style="color: #b4fa70;">KEY</span> AUTOINCREMENT <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [<span style="color: #b4fa70;">Name</span>] NVARCHAR(120)
+);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd4d4c8b" class="outline-4">
+<h4 id="orgd4d4c8b"><code>.schema tracks</code></h4>
+<div class="outline-text-4" id="text-orgd4d4c8b">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #b4fa70;">CREATE</span> <span style="color: #b4fa70;">TABLE</span> <span style="color: #fce94f;">IF</span> <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">EXISTS</span> "tracks"
+(
+    [TrackId] <span style="color: #8cc4ff;">INTEGER</span> <span style="color: #b4fa70;">PRIMARY</span> <span style="color: #b4fa70;">KEY</span> AUTOINCREMENT <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [<span style="color: #b4fa70;">Name</span>] NVARCHAR(200)  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [AlbumId] <span style="color: #8cc4ff;">INTEGER</span>,
+    [MediaTypeId] <span style="color: #8cc4ff;">INTEGER</span>  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [GenreId] <span style="color: #8cc4ff;">INTEGER</span>,
+    [Composer] NVARCHAR(220),
+    [Milliseconds] <span style="color: #8cc4ff;">INTEGER</span>  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    [Bytes] <span style="color: #8cc4ff;">INTEGER</span>,
+    [UnitPrice] <span style="color: #8cc4ff;">NUMERIC</span>(10,2)  <span style="color: #b4fa70;">NOT</span> <span style="color: #b4fa70;">NULL</span>,
+    <span style="color: #b4fa70;">FOREIGN</span> <span style="color: #b4fa70;">KEY</span> ([AlbumId]) <span style="color: #b4fa70;">REFERENCES</span> "albums" ([AlbumId])
+                <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">DELETE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span> <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">UPDATE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span>,
+    <span style="color: #b4fa70;">FOREIGN</span> <span style="color: #b4fa70;">KEY</span> ([GenreId]) <span style="color: #b4fa70;">REFERENCES</span> "genres" ([GenreId])
+                <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">DELETE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span> <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">UPDATE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span>,
+    <span style="color: #b4fa70;">FOREIGN</span> <span style="color: #b4fa70;">KEY</span> ([MediaTypeId]) <span style="color: #b4fa70;">REFERENCES</span> "media_types" ([MediaTypeId])
+                <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">DELETE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span> <span style="color: #b4fa70;">ON</span> <span style="color: #b4fa70;">UPDATE</span> <span style="color: #b4fa70;">NO</span> <span style="color: #b4fa70;">ACTION</span>
+);
+<span style="color: #b4fa70;">CREATE</span> INDEX [IFK_TrackAlbumId] <span style="color: #b4fa70;">ON</span> "tracks" ([AlbumId]);
+<span style="color: #b4fa70;">CREATE</span> INDEX [IFK_TrackGenreId] <span style="color: #b4fa70;">ON</span> "tracks" ([GenreId]);
+<span style="color: #b4fa70;">CREATE</span> INDEX [IFK_TrackMediaTypeId] <span style="color: #b4fa70;">ON</span> "tracks" ([MediaTypeId]);
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgc6ac39a" class="outline-3">
+<h3 id="orgc6ac39a">Select</h3>
+<div class="outline-text-3" id="text-orgc6ac39a">
+<p>
+Syntax:
+</p>
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #b4fa70;">SELECT</span> <span style="color: #b4fa70;">DISTINCT</span> column_list
+<span style="color: #b4fa70;">FROM</span> table_list
+<span style="color: #b4fa70;">JOIN</span> a_table <span style="color: #b4fa70;">ON</span> join_condition
+<span style="color: #b4fa70;">WHERE</span> row_filter
+<span style="color: #b4fa70;">ORDER</span> <span style="color: #b4fa70;">BY</span> a_column
+<span style="color: #b4fa70;">LIMIT</span> a_count OFFSET offset
+<span style="color: #b4fa70;">GROUP</span> <span style="color: #b4fa70;">BY</span> a_column
+<span style="color: #b4fa70;">HAVING</span> group_filter;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgf33dfdf" class="outline-4">
+<h4 id="orgf33dfdf">Select * from albums</h4>
+<div class="outline-text-4" id="text-orgf33dfdf">
+<div class="org-src-container">
+<pre class="src src-sql" id="org93765a0"><span style="color: #b4fa70;">SELECT</span> *
+<span style="color: #b4fa70;">FROM</span> albums
+<span style="color: #b4fa70;">LIMIT</span> 10 OFFSET 10;
+</pre>
+</div>
+
+<table>
+
+
+<colgroup>
+<col  class="org-right">
+
+<col  class="org-left">
+
+<col  class="org-right">
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">AlbumId</td>
+<td class="org-left">Title</td>
+<td class="org-right">ArtistId</td>
+</tr>
+
+<tr>
+<td class="org-right">11</td>
+<td class="org-left">Out Of Exile</td>
+<td class="org-right">8</td>
+</tr>
+
+<tr>
+<td class="org-right">12</td>
+<td class="org-left">BackBeat Soundtrack</td>
+<td class="org-right">9</td>
+</tr>
+
+<tr>
+<td class="org-right">13</td>
+<td class="org-left">The Best Of Billy Cobham</td>
+<td class="org-right">10</td>
+</tr>
+
+<tr>
+<td class="org-right">14</td>
+<td class="org-left">Alcohol Fueled Brewtality Live! [Disc 1]</td>
+<td class="org-right">11</td>
+</tr>
+
+<tr>
+<td class="org-right">15</td>
+<td class="org-left">Alcohol Fueled Brewtality Live! [Disc 2]</td>
+<td class="org-right">11</td>
+</tr>
+
+<tr>
+<td class="org-right">16</td>
+<td class="org-left">Black Sabbath</td>
+<td class="org-right">12</td>
+</tr>
+
+<tr>
+<td class="org-right">17</td>
+<td class="org-left">Black Sabbath Vol. 4 (Remaster)</td>
+<td class="org-right">12</td>
+</tr>
+
+<tr>
+<td class="org-right">18</td>
+<td class="org-left">Body Count</td>
+<td class="org-right">13</td>
+</tr>
+
+<tr>
+<td class="org-right">19</td>
+<td class="org-left">Chemical Wedding</td>
+<td class="org-right">14</td>
+</tr>
+
+<tr>
+<td class="org-right">20</td>
+<td class="org-left">The Best Of Buddy Guy - The Millenium Collection</td>
+<td class="org-right">15</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+<div id="outline-container-orga9b771e" class="outline-4">
+<h4 id="orga9b771e">Select albums with most tracks</h4>
+<div class="outline-text-4" id="text-orga9b771e">
+<div class="org-src-container">
+<pre class="src src-sql" id="org47cb1df"><span style="color: #b4fa70;">SELECT</span> <span style="color: #e090d7;">count</span>(tr.trackid) Tracks, title Album_Title, ar.<span style="color: #b4fa70;">name</span> Artist_Name
+<span style="color: #b4fa70;">FROM</span> artists ar
+<span style="color: #b4fa70;">JOIN</span> albums al <span style="color: #b4fa70;">ON</span> al.artistid = ar.artistid
+<span style="color: #b4fa70;">JOIN</span> tracks tr <span style="color: #b4fa70;">ON</span> al.albumid  = tr.albumid
+<span style="color: #b4fa70;">GROUP</span> <span style="color: #b4fa70;">BY</span> al.title
+<span style="color: #b4fa70;">HAVING</span> Tracks &gt; 13
+<span style="color: #b4fa70;">ORDER</span> <span style="color: #b4fa70;">BY</span> Tracks <span style="color: #b4fa70;">DESC</span>, ar.<span style="color: #b4fa70;">name</span> <span style="color: #b4fa70;">ASC</span>
+<span style="color: #b4fa70;">LIMIT</span> 10;
+</pre>
+</div>
+
+<table>
+
+
+<colgroup>
+<col  class="org-right">
+
+<col  class="org-left">
+
+<col  class="org-left">
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">Tracks</td>
+<td class="org-left">Album_Title</td>
+<td class="org-left">Artist_Name</td>
+</tr>
+
+<tr>
+<td class="org-right">57</td>
+<td class="org-left">Greatest Hits</td>
+<td class="org-left">Lenny Kravitz</td>
+</tr>
+
+<tr>
+<td class="org-right">34</td>
+<td class="org-left">Minha Historia</td>
+<td class="org-left">Chico Buarque</td>
+</tr>
+
+<tr>
+<td class="org-right">30</td>
+<td class="org-left">Unplugged</td>
+<td class="org-left">Eric Clapton</td>
+</tr>
+
+<tr>
+<td class="org-right">26</td>
+<td class="org-left">Lost, Season 3</td>
+<td class="org-left">Lost</td>
+</tr>
+
+<tr>
+<td class="org-right">25</td>
+<td class="org-left">Lost, Season 1</td>
+<td class="org-left">Lost</td>
+</tr>
+
+<tr>
+<td class="org-right">25</td>
+<td class="org-left">The Office, Season 3</td>
+<td class="org-left">The Office</td>
+</tr>
+
+<tr>
+<td class="org-right">24</td>
+<td class="org-left">Battlestar Galactica (Classic), Season 1</td>
+<td class="org-left">Battlestar Galactica (Classic)</td>
+</tr>
+
+<tr>
+<td class="org-right">24</td>
+<td class="org-left">My Way: The Best Of Frank Sinatra [Disc 1]</td>
+<td class="org-left">Frank Sinatra</td>
+</tr>
+
+<tr>
+<td class="org-right">24</td>
+<td class="org-left">Lost, Season 2</td>
+<td class="org-left">Lost</td>
+</tr>
+
+<tr>
+<td class="org-right">23</td>
+<td class="org-left">Afrociberdelia</td>
+<td class="org-left">Chico Science &amp; Nação Zumbi</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: DEADB17 (<a href="mailto:deadb17@gmail.com">deadb17@gmail.com</a>)</p>
+<p class="date">Date: 2018-09-14 Fri 00:00</p>
+<p class="creator">Emacs 26.1 (Org mode 9.1.14)</p>
+<p class="validation"></p>
+</div>
+</body>
+</html>

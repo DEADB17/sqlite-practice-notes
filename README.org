@@ -1,0 +1,230 @@
+# -*- org-confirm-babel-evaluate: nil; -*-
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:nil arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+OPTIONS: html-style:nil html-scripts:nil
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" href="solarized-dark.min.css">
+#+TITLE: SQLite Practice Notes
+#+DATE: <2018-09-14 Fri>
+#+AUTHOR: DEADB17
+#+EMAIL: deadb17@gmail.com
+#+EXPORT_FILE_NAME: docs/index
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 26.1 (Org mode 9.1.14)
+
+- An [[https://orgmode.org/][orgmode]] based note [[https://deadb17.github.io/sqlite-practice-notes/][publishing]] pipeline example created while looking at [[https://sqlite.org/][SQLite]].
+- Uses the =chinook.db= database from [[http://www.sqlitetutorial.net/][SQLite Tutorial]].
+
+
+* Setup
+#+name: sql-sh-command
+#+begin_src sh :exports none
+  function sql {
+      sqlite3 -header -list -separator '	' chinook.db "$1"
+  }
+#+end_src
+
+** =sqlite3= command line options
+#+BEGIN_EXAMPLE
+  Usage: sqlite3 [OPTIONS] FILENAME [SQL]
+
+  FILENAME is the name of an SQLite database. A new database is created
+  if the file does not previously exist.
+
+  OPTIONS include:
+     -ascii               set output mode to 'ascii'
+     -bail                stop after hitting an error
+     -batch               force batch I/O
+     -column              set output mode to 'column'
+     -cmd COMMAND         run "COMMAND" before reading stdin
+     -csv                 set output mode to 'csv'
+     -echo                print commands before execution
+     -init FILENAME       read/process named file
+     -[no]header          turn headers on or off
+     -help                show this message
+     -html                set output mode to HTML
+     -interactive         force interactive I/O
+     -line                set output mode to 'line'
+     -list                set output mode to 'list'
+     -lookaside SIZE N    use N entries of SZ bytes for lookaside memory
+     -mmap N              default mmap size set to N
+     -newline SEP         set output row separator. Default: '\n'
+     -nullvalue TEXT      set text string for NULL values. Default ''
+     -pagecache SIZE N    use N slots of SZ bytes each for page cache memory
+     -scratch SIZE N      use N slots of SZ bytes each for scratch memory
+     -separator SEP       set output column separator. Default: '|'
+     -stats               print memory stats before each finalize
+     -version             show SQLite version
+     -vfs NAME            use NAME as the default VFS
+#+END_EXAMPLE
+
+** Show tables
+#+name: show-tables
+#+begin_src sh :results output :exports both
+sqlite3 -cmd '.tables' chinook.db
+#+end_src
+
+** Show schema
+#+name: show-schema
+#+begin_src sh :results output :exports code :wrap "src sql"
+sqlite3 -cmd '.schema albums' chinook.db
+#+end_src
+
+
+* Practice
+** Tables
+#+RESULTS: show-tables
+: albums          employees       invoices        playlists
+: artists         genres          media_types     tracks
+: customers       invoice_items   playlist_track
+
+** Schemas
+*** =.schema albums=
+#+name: ex-schemas-albums
+#+begin_src sh :results output :exports results :wrap "src sql" :noweb yes
+  <<sql-sh-command>>
+  sql '.schema albums'
+#+end_src
+
+#+RESULTS: ex-schemas-albums
+#+BEGIN_src sql
+CREATE TABLE IF NOT EXISTS "albums"
+(
+    [AlbumId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    [Title] NVARCHAR(160)  NOT NULL,
+    [ArtistId] INTEGER  NOT NULL,
+    FOREIGN KEY ([ArtistId]) REFERENCES "artists" ([ArtistId])
+		ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+CREATE INDEX [IFK_AlbumArtistId] ON "albums" ([ArtistId]);
+#+END_src
+
+*** =.schema artists=
+#+name: ex-schemas-artists
+#+begin_src sh :results output :exports results :wrap "src sql" :noweb yes
+  <<sql-sh-command>>
+  sql '.schema artists'
+#+end_src
+
+#+RESULTS: ex-schemas-artists
+#+BEGIN_src sql
+CREATE TABLE IF NOT EXISTS "artists"
+(
+    [ArtistId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    [Name] NVARCHAR(120)
+);
+#+END_src
+
+*** =.schema tracks=
+#+name: ex-schemas-tracks
+#+begin_src sh :results output :exports results :wrap "src sql" :noweb yes
+  <<sql-sh-command>>
+  sql '.schema tracks'
+#+end_src
+
+#+RESULTS: ex-schemas-tracks
+#+BEGIN_src sql
+CREATE TABLE IF NOT EXISTS "tracks"
+(
+    [TrackId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    [Name] NVARCHAR(200)  NOT NULL,
+    [AlbumId] INTEGER,
+    [MediaTypeId] INTEGER  NOT NULL,
+    [GenreId] INTEGER,
+    [Composer] NVARCHAR(220),
+    [Milliseconds] INTEGER  NOT NULL,
+    [Bytes] INTEGER,
+    [UnitPrice] NUMERIC(10,2)  NOT NULL,
+    FOREIGN KEY ([AlbumId]) REFERENCES "albums" ([AlbumId])
+		ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY ([GenreId]) REFERENCES "genres" ([GenreId])
+		ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY ([MediaTypeId]) REFERENCES "media_types" ([MediaTypeId])
+		ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+CREATE INDEX [IFK_TrackAlbumId] ON "tracks" ([AlbumId]);
+CREATE INDEX [IFK_TrackGenreId] ON "tracks" ([GenreId]);
+CREATE INDEX [IFK_TrackMediaTypeId] ON "tracks" ([MediaTypeId]);
+#+END_src
+
+
+** Select
+Syntax:
+#+begin_src sql
+  SELECT DISTINCT column_list
+  FROM table_list
+  JOIN a_table ON join_condition
+  WHERE row_filter
+  ORDER BY a_column
+  LIMIT a_count OFFSET offset
+  GROUP BY a_column
+  HAVING group_filter;
+#+end_src
+
+*** Select * from albums
+#+name: ex-query-01
+#+begin_src sql :results silent :exports code
+  SELECT *
+  FROM albums
+  LIMIT 10 OFFSET 10;
+#+end_src
+
+#+name: ex-01
+#+begin_src sh :results output table :exports results :noweb yes
+  <<sql-sh-command>>
+  sql '
+  <<ex-query-01>>
+  '
+#+end_src
+
+#+RESULTS: ex-01
+| AlbumId | Title                                            | ArtistId |
+|      11 | Out Of Exile                                     |        8 |
+|      12 | BackBeat Soundtrack                              |        9 |
+|      13 | The Best Of Billy Cobham                         |       10 |
+|      14 | Alcohol Fueled Brewtality Live! [Disc 1]         |       11 |
+|      15 | Alcohol Fueled Brewtality Live! [Disc 2]         |       11 |
+|      16 | Black Sabbath                                    |       12 |
+|      17 | Black Sabbath Vol. 4 (Remaster)                  |       12 |
+|      18 | Body Count                                       |       13 |
+|      19 | Chemical Wedding                                 |       14 |
+|      20 | The Best Of Buddy Guy - The Millenium Collection |       15 |
+
+
+*** Select albums with most tracks
+#+name: ex-query-02
+#+begin_src sql :results silent :exports code
+  SELECT count(tr.trackid) Tracks, title Album_Title, ar.name Artist_Name
+  FROM artists ar
+  JOIN albums al ON al.artistid = ar.artistid
+  JOIN tracks tr ON al.albumid  = tr.albumid
+  GROUP BY al.title
+  HAVING Tracks > 13
+  ORDER BY Tracks DESC, ar.name ASC
+  LIMIT 10;
+#+end_src
+
+#+name: ex-02
+#+begin_src sh :results output table :exports results :noweb yes
+  <<sql-sh-command>>
+  sql '
+  <<ex-query-02>>
+  '
+#+end_src
+
+#+RESULTS: ex-02
+| Tracks | Album_Title                                | Artist_Name                    |
+|     57 | Greatest Hits                              | Lenny Kravitz                  |
+|     34 | Minha Historia                             | Chico Buarque                  |
+|     30 | Unplugged                                  | Eric Clapton                   |
+|     26 | Lost, Season 3                             | Lost                           |
+|     25 | Lost, Season 1                             | Lost                           |
+|     25 | The Office, Season 3                       | The Office                     |
+|     24 | Battlestar Galactica (Classic), Season 1   | Battlestar Galactica (Classic) |
+|     24 | My Way: The Best Of Frank Sinatra [Disc 1] | Frank Sinatra                  |
+|     24 | Lost, Season 2                             | Lost                           |
+|     23 | Afrociberdelia                             | Chico Science & Nação Zumbi    |
